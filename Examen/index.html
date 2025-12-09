@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Mars Collector - Explorador de Marte</title>
+    <!-- Font Awesome para iconos profesionales -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ===== ESTILOS GLOBALES ===== */
+        /* Configuración para pantalla completa sin scroll */
+        html, body {
+            overflow: hidden;  /* Evita el scroll */
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Canvas de Babylon.js - ocupa toda la pantalla */
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;  /* Desactiva gestos táctiles del navegador */
+            display: block;
+        }
+        
+        /* ===== PANTALLA DE INICIO ===== */
+        #menuInicio {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 50%, #0a0510 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        #menuInicio.hidden {
+            display: none;
+        }
+        
+        .menu-content {
+            text-align: center;
+            color: white;
+            max-width: 600px;
+            padding: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .titulo-juego {
+            font-size: 64px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(255, 107, 53, 0.5);
+        }
+        
+        .subtitulo-juego {
+            font-size: 20px;
+            color: #aaa;
+            margin-bottom: 40px;
+            letter-spacing: 2px;
+        }
+        
+        .instrucciones {
+            text-align: left;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            font-size: 17px;
+            line-height: 2.2;
+        }
+        
+        .instrucciones h3 {
+            color: #ff6b35;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .instrucciones h3 i {
+            font-size: 28px;
+        }
+        
+        .instrucciones p {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .instrucciones p i {
+            font-size: 20px;
+            min-width: 25px;
+            color: #ff6b35;
+        }
+        
+        .instrucciones .control-group {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border-left: 3px solid #ff6b35;
+        }
+        
+        .instrucciones .control-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 12px 0;
+        }
+        
+        .instrucciones .control-item i {
+            font-size: 22px;
+            color: #ff6b35;
+        }
+        
+        .btn-jugar {
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            color: white;
+            border: none;
+            padding: 18px 60px;
+            font-size: 26px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(255, 107, 53, 0.4);
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .btn-jugar i {
+            font-size: 28px;
+        }
+        
+        .btn-jugar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(255, 107, 53, 0.6);
+        }
+        
+        /* ===== MENÚ DE PAUSA ===== */
+        #menuPausa {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+            backdrop-filter: blur(5px);
+        }
+        
+        #menuPausa.active {
+            display: flex;
+        }
+        
+        .pausa-content {
+            text-align: center;
+            color: white;
+            background: rgba(20, 20, 20, 0.95);
+            padding: 40px 60px;
+            border-radius: 20px;
+            border: 2px solid rgba(255, 107, 53, 0.3);
+        }
+        
+        .pausa-content h2 {
+            font-size: 48px;
+            margin-bottom: 40px;
+            color: #ff6b35;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .pausa-content h2 i {
+            font-size: 52px;
+        }
+        
+        .btn-pausa {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            width: 100%;
+            margin: 15px 0;
+            padding: 18px 40px;
+            font-size: 22px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-pausa i {
+            font-size: 24px;
+        }
+        
+        .btn-continuar {
+            background: linear-gradient(135deg, #00ff88, #00cc6a);
+            color: white;
+        }
+        
+        .btn-reiniciar {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            color: white;
+        }
+        
+        .btn-salir {
+            background: linear-gradient(135deg, #ff3333, #cc0000);
+            color: white;
+        }
+        
+        .btn-pausa:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(255, 255, 255, 0.3);
+        }
+
+        /* ===== INTERFAZ DE USUARIO (UI) ===== */
+        /* Barra superior horizontal minimalista centrada */
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 50%;  /* Centra horizontalmente */
+            transform: translateX(-50%);  /* Ajuste fino para centrado perfecto */
+            color: rgba(255, 255, 255, 0.9);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 18px;
+            background: rgba(0, 0, 0, 0.4);  /* Fondo semi-transparente */
+            padding: 15px 40px;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);  /* Efecto de desenfoque del fondo */
+            display: flex;  /* Layout horizontal */
+            align-items: center;
+            gap: 40px;  /* Espacio entre elementos */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+        
+        .ui-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .ui-item i {
+            font-size: 22px;
+            color: #ff6b35;
+        }
+        
+        /* ===== BOTÓN DE PAUSA ===== */
+        #btnPausa {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 12px 25px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        #btnPausa i {
+            font-size: 20px;
+        }
+        
+        #btnPausa:hover {
+            background: rgba(255, 107, 53, 0.6);
+            border-color: rgba(255, 107, 53, 0.8);
+            transform: scale(1.05);
+        }
+        
+        /* Cada elemento individual de la UI */
+        .ui-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;  /* Evita saltos de línea */
+        }
+        
+        /* Separador vertical entre elementos */
+        .ui-separator {
+            width: 1px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Estilo del temporizador */
+        #timer {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.95);
+            letter-spacing: 1px;
+        }
+        
+        /* Color de advertencia cuando queda poco tiempo */
+        #timer.warning {
+            color: #ffaa00;
+        }
+        
+        /* Color de peligro cuando queda muy poco tiempo */
+        #timer.danger {
+            color: #ff6666;
+        }
+        
+        /* ===== PANTALLA DE FIN DE JUEGO ===== */
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);  /* Centra en medio de la pantalla */
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(20, 20, 60, 0.95));
+            padding: 40px 60px;
+            border-radius: 20px;
+            border: 3px solid #6ab0ff;
+            box-shadow: 0 0 50px rgba(0, 100, 255, 0.8);
+            text-align: center;
+            display: none;  /* Oculto por defecto */
+            z-index: 1000;  /* Aparece sobre todo */
+        }
+        
+        #gameOver h1 {
+            color: #6ab0ff;
+            font-size: 48px;
+            margin: 0 0 20px 0;
+            text-shadow: 0 0 20px rgba(106, 176, 255, 1);
+        }
+        
+        #gameOver p {
+            font-size: 24px;
+            margin: 15px 0;
+        }
+        
+        /* Botón de reiniciar juego */
+        #gameOver button {
+            margin-top: 30px;
+            padding: 18px 50px;
+            font-size: 22px;
+            background: linear-gradient(135deg, #ff6b35, #ff8c42);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+            transition: transform 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        #gameOver button i {
+            font-size: 24px;
+        }
+        
+        #gameOver button:hover {
+            transform: scale(1.05);  /* Efecto de zoom al pasar el cursor */
+        }
+        
+        /* ===== NOTIFICACIONES ===== */
+        /* Mensajes sutiles que aparecen cuando recoges/entregas rocas */
+        #notification {
+            position: absolute;
+            top: 100px;  /* Debajo de la barra de UI */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+            display: none;  /* Oculto por defecto */
+            z-index: 2000;
+            font-size: 16px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Animación de entrada y salida de notificaciones */
+        @keyframes notificationFade {
+            0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
+    </style>
+
+    <!-- Librería Babylon.js para gráficos 3D -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+</head>
+<body>
+    <!-- Pantalla de inicio con instrucciones -->
+    <div id="menuInicio">
+        <div class="menu-content">
+            <h1 class="titulo-juego">MARS COLLECTOR</h1>
+            <p class="subtitulo-juego">MISIÓN DE EXPLORACIÓN MARCIANA</p>
+            
+            <div class="instrucciones">
+                <h3> INSTRUCCIONES</h3>
+                
+                <p><i class="fas fa-bullseye"></i> <strong>Objetivo:</strong> Recolecta 20 rocas marcianas en 5 minutos</p>
+                
+                <div class="control-group">
+                    <p><i class="fas fa-gamepad"></i> <strong>Controles:</strong></p>
+                    <div class="control-item">
+                        <i class="fas fa-arrow-up"></i>
+                        <i class="fas fa-arrow-down"></i>
+                        <span>Flechas - Avanzar/Retroceder</span>
+                    </div>
+                    <div class="control-item">
+                        <i class="fas fa-arrow-left"></i>
+                        <i class="fas fa-arrow-right"></i>
+                        <span>Flechas - Girar izquierda/derecha</span>
+                    </div>
+                    <div class="control-item">
+                        <i class="fas fa-keyboard"></i>
+                        <span>ESPACIO - Recoger/Entregar roca</span>
+                    </div>
+                    <div class="control-item">
+                        <i class="fas fa-video"></i>
+                        <span>V - Cambiar cámara</span>
+                    </div>
+                </div>
+                
+                <p><i class="fas fa-lightbulb"></i> <strong>Consejo:</strong> Acércate a las zonas naranjas para recoger rocas</p>
+            </div>
+            
+            <button class="btn-jugar" onclick="iniciarJuego()"><i class="fas fa-play"></i> JUGAR</button>
+        </div>
+    </div>
+    
+    <!-- Menú de pausa -->
+    <div id="menuPausa">
+        <div class="pausa-content">
+            <h2> PAUSA</h2>
+            <button class="btn-pausa btn-continuar" onclick="continuarJuego()"><i class="fas fa-play"></i> Continuar</button>
+            <button class="btn-pausa btn-salir" onclick="salirAlMenu()"><i class="fas fa-home"></i> Menú Principal</button>
+        </div>
+    </div>
+    
+    <!-- Canvas donde se renderiza el juego 3D -->
+    <canvas id="renderCanvas"></canvas>
+
+    <!-- Barra de interfaz superior con información del juego -->
+    <div id="ui">
+        <div class="ui-item">
+            <i class="fas fa-clock"></i>
+            <span id="timer">05:00</span>  <!-- Temporizador de 5 minutos -->
+        </div>
+        <div class="ui-separator"></div>
+        <div class="ui-item">
+            <i class="fas fa-gem"></i>  <!-- Icono de gema -->
+            <span id="rocasRecogidas">0/20</span>  <!-- Contador de rocas -->
+        </div>
+        <div class="ui-separator"></div>
+        <div class="ui-item">
+            <i class="fas fa-box" id="iconoInventario"></i>  <!-- Icono de inventario -->
+            <span id="enManos">—</span>  <!-- Indicador de roca en mano -->
+        </div>
+    </div>
+    
+    <!-- Botón de pausa -->
+    <button id="btnPausa" onclick="pausarJuego()"><i class="fas fa-pause"></i> PAUSA</button>
+    
+    <!-- Notificaciones temporales -->
+    <div id="notification"></div>
+    
+    <!-- Pantalla de fin de juego -->
+    <div id="gameOver">
+        <h1 id="resultTitle"><i class="fas fa-trophy"></i> ¡MISIÓN COMPLETA!</h1>
+        <p id="resultMessage">Has completado la misión</p>
+        <p id="finalStats"></p>
+        <button onclick="location.reload()"><i class="fas fa-redo"></i> JUGAR DE NUEVO</button>
+    </div>
+
+    <script>
+        // ===== INICIALIZACIÓN DEL MOTOR BABYLON.JS =====
+        const canvas = document.getElementById("renderCanvas");
+        const engine = new BABYLON.Engine(canvas, true);  // Motor de renderizado 3D
+
+        // ===== VARIABLES GLOBALES DEL JUEGO =====
+        let rocasEnInventario = [];        // Array de rocas que lleva el rover (máximo 3)
+        const maxRocasInventario = 3;      // Capacidad máxima del inventario
+        let inputMap = {};                  // Mapa de teclas presionadas
+        let rocasRecogidas = 0;            // Contador de rocas entregadas
+        let totalRocas = 20;               // Total de rocas en el mapa
+        let tiempoRestante = 300;          // 5 minutos en segundos
+        let juegoTerminado = false;        // Estado del juego
+        let juegoPausado = false;          // Estado de pausa
+        let juegoIniciado = false;         // Si el juego ya comenzó
+        let rocasArray = [];               // Array con todas las rocas del mapa
+        let muestrasEntregadas = 0;        // Alias de rocasRecogidas
+        let vistaFirstPerson = false;      // Control de vista de cámara (false = 3ra persona)
+        let timerInterval = null;          // Referencia al intervalo del temporizador
+        let scene;                         // Referencia global a la escena
+
+        // ===== FUNCIÓN PRINCIPAL PARA CREAR LA ESCENA 3D =====
+        const createScene = function () {
+            scene = new BABYLON.Scene(engine);
+
+            // ----- SKYBOX Y AMBIENTE ESPACIAL -----
+            // Crear una caja gigante que simula el cielo/espacio
+            const skybox = BABYLON.MeshBuilder.CreateBox("skyBox", {size: 1000}, scene);
+            const skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
+            skyboxMaterial.backFaceCulling = false;  // Renderiza el interior de la caja
+            skyboxMaterial.disableLighting = true;    // No afectado por luces
+            skybox.material = skyboxMaterial;
+            skybox.infiniteDistance = true;           // Siempre a distancia infinita
+            
+            // Color del espacio profundo
+            skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+            skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+            skyboxMaterial.emissiveColor = new BABYLON.Color3(0.05, 0.02, 0.1);  // Leve brillo morado
+            
+            // ----- SISTEMA DE PARTÍCULAS PARA ESTRELLAS -----
+            const particleSystem = new BABYLON.ParticleSystem("stars", 2000, scene);
+            particleSystem.particleTexture = new BABYLON.Texture("https://www.babylonjs-playground.com/textures/flare.png", scene);
+            particleSystem.emitter = new BABYLON.Vector3(0, 50, 0);  // Punto de origen
+            particleSystem.minEmitBox = new BABYLON.Vector3(-500, -500, -500);  // Área de emisión
+            particleSystem.maxEmitBox = new BABYLON.Vector3(500, 500, 500);
+            particleSystem.color1 = new BABYLON.Color4(1, 1, 1, 1);              // Color blanco
+            particleSystem.color2 = new BABYLON.Color4(0.8, 0.8, 1, 1);          // Leve azul
+            particleSystem.colorDead = new BABYLON.Color4(0, 0, 0, 0);           // Transparente al morir
+            particleSystem.minSize = 0.3;              // Tamaño mínimo de estrellas
+            particleSystem.maxSize = 1.5;              // Tamaño máximo
+            particleSystem.minLifeTime = 999999;       // Vida infinita
+            particleSystem.maxLifeTime = 999999;
+            particleSystem.emitRate = 2000;            // Emitir 2000 partículas
+            particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;  // Modo aditivo (brillante)
+            particleSystem.gravity = new BABYLON.Vector3(0, 0, 0);  // Sin gravedad
+            particleSystem.minEmitPower = 0;           // Sin velocidad (estáticas)
+            particleSystem.maxEmitPower = 0;
+            particleSystem.updateSpeed = 0.005;        // Velocidad de actualización
+            particleSystem.start();                    // Iniciar sistema de partículas
+            
+            // Color de fondo de la escena (espacio oscuro)
+            scene.clearColor = new BABYLON.Color3(0.01, 0.01, 0.02);
+
+            // ----- SISTEMA DE CÁMARAS -----
+            // Cámara en tercera persona (vista desde atrás del rover)
+            const cameraThirdPerson = new BABYLON.FollowCamera(
+                "followCamera",
+                new BABYLON.Vector3(0, 12, -22),  // Posición inicial
+                scene
+            );
+            cameraThirdPerson.radius = 20;                  // Distancia desde el objetivo
+            cameraThirdPerson.heightOffset = 8;             // Altura sobre el objetivo
+            cameraThirdPerson.rotationOffset = 180;        // Ángulo de vista (180 = desde atrás)
+            cameraThirdPerson.cameraAcceleration = 0.05;   // Suavidad del movimiento
+            cameraThirdPerson.maxCameraSpeed = 15;         // Velocidad máxima
+            cameraThirdPerson.inputs.clear();              // Desactivar controles manuales
+            
+            // Cámara en primera persona (vista del conductor)
+            const cameraFirstPerson = new BABYLON.FreeCamera(
+                "firstPersonCamera",
+                new BABYLON.Vector3(0, 1.5, 0),  // Posición inicial
+                scene
+            );
+            cameraFirstPerson.inputs.clear();  // Desactivar controles manuales
+            
+            // Activar cámara tercera persona por defecto
+            scene.activeCamera = cameraThirdPerson;
+
+            // ----- ILUMINACIÓN -----
+            // Luz hemisférica (ilumina desde arriba)
+            const light = new BABYLON.HemisphericLight(
+                "light1",
+                new BABYLON.Vector3(0, 1, 0),  // Dirección hacia arriba
+                scene
+            );
+            light.intensity = 1.0;                              // Intensidad de la luz
+            light.diffuse = new BABYLON.Color3(1, 1, 1);       // Color blanco neutro
+
+            // ===== DEFINICIÓN DE MATERIALES =====
+            
+            // Material del suelo marciano (textura roja)
+            const matSuelo = new BABYLON.StandardMaterial("matSuelo", scene);
+            matSuelo.diffuseColor = new BABYLON.Color3(0.8, 0.3, 0.1);  // Tono rojizo
+            matSuelo.diffuseTexture = new BABYLON.Texture(
+                "assets/textures/mars_ground.jpg",
+                scene
+            );
+            
+            // Material del cuerpo del rover
+            const matRoverCuerpo = new BABYLON.StandardMaterial("matRoverCuerpo", scene);
+            matRoverCuerpo.diffuseColor = new BABYLON.Color3(1, 1, 1);  // Blanco (sin alterar textura)
+            matRoverCuerpo.diffuseTexture = new BABYLON.Texture(
+                "assets/textures/rover_body.jpg",
+                scene
+            );
+            matRoverCuerpo.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);  // Brillo sutil
+
+            // Material de la cabina (azul) - ELIMINADO del rover
+            const matRoverCabina = new BABYLON.StandardMaterial("matRoverCabina", scene);
+            matRoverCabina.diffuseColor = new BABYLON.Color3(0.4, 0.6, 1.0);
+
+            // Material de los paneles solares (gris oscuro)
+            const matRoverPanel = new BABYLON.StandardMaterial("matRoverPanel", scene);
+            matRoverPanel.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.2);
+
+            // Material de las ruedas (negro)
+            const matRueda = new BABYLON.StandardMaterial("matRueda", scene);
+            matRueda.diffuseColor = new BABYLON.Color3(0.05, 0.05, 0.05);
+
+            // Material de las rocas marcianas
+            const matMuestra = new BABYLON.StandardMaterial("matMuestra", scene);
+            matMuestra.diffuseColor = new BABYLON.Color3(1, 1, 1);
+            matMuestra.diffuseTexture = new BABYLON.Texture(
+                "assets/textures/mars_rock.jpg",
+                scene
+            );
+
+            // Material de la zona de entrega (azul semi-transparente)
+            const matZonaEntrega = new BABYLON.StandardMaterial("matZonaEntrega", scene);
+            matZonaEntrega.diffuseColor = new BABYLON.Color3(0.2, 0.6, 1.0);
+            matZonaEntrega.alpha = 0.7;  // 70% opaco
+
+            // Material de las zonas de recogida (naranja semi-transparente)
+            const matZonaRecogida = new BABYLON.StandardMaterial("matZonaRecogida", scene);
+            matZonaRecogida.diffuseColor = new BABYLON.Color3(1.0, 0.6, 0.0);
+            matZonaRecogida.alpha = 0.7;
+
+            // Material de la estructura metálica de la base
+            const matBaseMetal = new BABYLON.StandardMaterial("matBaseMetal", scene);
+            matBaseMetal.diffuseColor = new BABYLON.Color3(0.7, 0.7, 0.8);  // Gris metálico
+
+            // Material del domo de la base (vidrio semi-transparente)
+            const matBaseDomo = new BABYLON.StandardMaterial("matBaseDomo", scene);
+            matBaseDomo.diffuseColor = new BABYLON.Color3(0.3, 0.7, 1.0);   // Azul
+            matBaseDomo.alpha = 0.8;  // Semi-transparente
+
+            // ===== CREACIÓN DE OBJETOS 3D =====
+
+            // ----- SUELO MARCIANO -----
+            // Terreno grande de 200x200 unidades
+            const suelo = BABYLON.MeshBuilder.CreateGround(
+                "suelo",
+                { width: 200, height: 200 },  // Mapa grande
+                scene
+            );
+            suelo.material = matSuelo;  // Aplicar textura marciana  // Aplicar textura marciana
+
+            // ===== CONSTRUCCIÓN DEL ROVER MARCIANO =====
+            // El rover es un conjunto de piezas jerárquicas
+            // Todas las partes son hijas de roverRoot para moverse juntas
+            
+            // Nodo raíz del rover (contenedor invisible)
+            const roverRoot = new BABYLON.TransformNode("roverRoot", scene);
+            roverRoot.position = new BABYLON.Vector3(0, 0, 0);  // Inicia en el centro
+            
+            // Vincular cámaras al rover
+            cameraThirdPerson.lockedTarget = roverRoot;  // La cámara 3ra persona sigue al rover
+            cameraFirstPerson.parent = roverRoot;         // La cámara 1ra persona se mueve con el rover
+            cameraFirstPerson.position = new BABYLON.Vector3(0, 3.5, 2.5); // Posición adelante y arriba
+
+            // Chasis principal del rover (cuerpo rectangular)
+            const chasis = BABYLON.MeshBuilder.CreateBox(
+                "chasis",
+                { width: 2.2, depth: 3.5, height: 0.6 },  // Dimensiones del cuerpo
+                scene
+            );
+            chasis.material = matRoverCuerpo;  // Textura del rover
+            chasis.position.y = 0.6;           // Elevado del suelo
+            chasis.parent = roverRoot;         // Hijo del rover
+
+            // Paneles solares laterales
+            const panelIzq = BABYLON.MeshBuilder.CreateBox(
+                "panelIzq",
+                { width: 0.1, depth: 2.8, height: 0.2 },  // Panel delgado
+                scene
+            );
+            panelIzq.material = matRoverPanel;
+            panelIzq.position = new BABYLON.Vector3(1.25, 0.9, -0.2);  // Lado izquierdo
+            panelIzq.parent = roverRoot;
+
+            // Clonar panel para el lado derecho
+            const panelDer = panelIzq.clone("panelDer");
+            panelDer.position.x = -1.25;  // Lado derecho
+            panelDer.parent = roverRoot;
+
+            // Parabrisas frontal inclinado
+            const parabrisas = BABYLON.MeshBuilder.CreateBox(
+                "parabrisas",
+                { width: 1.4, depth: 0.1, height: 0.7 },
+                scene
+            );
+            parabrisas.material = matRoverCabina;
+            parabrisas.position = new BABYLON.Vector3(0, 1.2, 1.1);  // Adelante y arriba
+            parabrisas.rotation.x = -Math.PI / 6;  // Inclinado 30 grados
+            parabrisas.parent = roverRoot;
+
+            // ----- RUEDAS DEL ROVER (6 ruedas) -----
+            // Función auxiliar para crear ruedas
+            const crearRueda = (nombre, x, z) => {
+                const rueda = BABYLON.MeshBuilder.CreateCylinder(
+                    nombre,
+                    { diameter: 0.7, height: 0.35, tessellation: 16 },  // Cilindro horizontal
+                    scene
+                );
+                rueda.material = matRueda;
+                rueda.rotation.z = Math.PI / 2;  // Rotar 90° para posición horizontal
+                rueda.position = new BABYLON.Vector3(x, 0.35, z);  // Posicionar en coordenadas
+                rueda.parent = roverRoot;  // Hijo del rover
+                return rueda;
+            };
+
+            // Crear las 6 ruedas del rover (3 por lado)
+            crearRueda("ruedaFL", 1.1, 1.4);   // Frontal izquierda
+            crearRueda("ruedaFM", 1.1, 0);     // Media izquierda
+            crearRueda("ruedaBL", 1.1, -1.4);  // Trasera izquierda
+            crearRueda("ruedaFR", -1.1, 1.4);  // Frontal derecha
+            crearRueda("ruedaFM2", -1.1, 0);   // Media derecha
+            crearRueda("ruedaBR", -1.1, -1.4); // Trasera derecha
+
+            // ===== ROCAS MARCIANAS (20 ROCAS DISTRIBUIDAS) =====
+            // Bucle para generar 20 rocas en posiciones aleatorias
+            for (let i = 0; i < totalRocas; i++) {
+                const muestra = BABYLON.MeshBuilder.CreateSphere(
+                    `muestra${i}`,
+                    { diameter: 1.0 },  // Esfera de 1 unidad
+                    scene
+                );
+                muestra.material = matMuestra;  // Textura de roca
+                
+                // Generar posición aleatoria evitando el centro (zona de inicio)
+                let x, z;
+                do {
+                    x = Math.random() * 160 - 80;  // Rango: -80 a +80
+                    z = Math.random() * 160 - 80;
+                } while (Math.abs(x) < 10 && Math.abs(z) < 10);  // Evitar centro (10x10)
+                
+                muestra.position = new BABYLON.Vector3(x, 0.5, z);  // Posicionar roca
+                
+                // Escala aleatoria para variedad visual
+                muestra.scaling = new BABYLON.Vector3(
+                    1.2 + Math.random() * 0.4,  // Ancho variable
+                    0.8 + Math.random() * 0.3,  // Alto variable
+                    1.0 + Math.random() * 0.4   // Profundidad variable
+                );
+                
+                // Zona de recogida (círculo naranja debajo de la roca)
+                const zonaRecogida = BABYLON.MeshBuilder.CreateGround(
+                    `zonaRecogida${i}`,
+                    { width: 3.5, height: 3.5 },  // Área de 3.5x3.5
+                    scene
+                );
+                zonaRecogida.material = matZonaRecogida;  // Material naranja semi-transparente
+                zonaRecogida.position = new BABYLON.Vector3(x, 0.02, z);  // Ligeramente sobre el suelo
+                
+                // Guardar referencia a la zona en la roca
+                muestra.zonaRecogida = zonaRecogida;
+                muestra.recogida = false;  // Marca si ya fue recogida
+                rocasArray.push(muestra);  // Agregar al array de rocas
+            }
+
+            // ===== BASE ESPACIAL (ZONA DE ENTREGA) =====
+            // Estructura donde se entregan las rocas recolectadas
+
+            // Plataforma circular principal
+            const basePad = BABYLON.MeshBuilder.CreateCylinder(
+                "basePad",
+                { diameter: 8, height: 0.4, tessellation: 32 },  // Cilindro aplanado
+                scene
+            );
+            basePad.material = matZonaEntrega;  // Material azul semi-transparente
+            basePad.position = new BABYLON.Vector3(-12, 0.2, -12);  // Esquina del mapa
+
+            // Anillo exterior decorativo
+            const baseRing = BABYLON.MeshBuilder.CreateTorus(
+                "baseRing",
+                { diameter: 8.2, thickness: 0.3, tessellation: 32 },  // Dona
+                scene
+            );
+            baseRing.material = matBaseMetal;
+            baseRing.position = new BABYLON.Vector3(-12, 0.5, -12);
+
+            // Domo transparente central
+            const baseDomo = BABYLON.MeshBuilder.CreateSphere(
+                "baseDomo",
+                { diameter: 4 },
+                scene
+            );
+            baseDomo.material = matBaseDomo;
+            baseDomo.position = new BABYLON.Vector3(-12, 2.5, -12);
+            baseDomo.scaling.y = 0.7;  // Aplastado verticalmente
+
+            // Torre/antena de comunicación
+            const baseTorre = BABYLON.MeshBuilder.CreateCylinder(
+                "baseTorre",
+                { diameter: 0.5, height: 4 },
+                scene
+            );
+            baseTorre.material = matBaseMetal;
+            baseTorre.position = new BABYLON.Vector3(-12, 4, -12);
+
+            // Esfera de la antena
+            const baseAntena = BABYLON.MeshBuilder.CreateSphere(
+                "baseAntena",
+                { diameter: 0.9 },
+                scene
+            );
+            baseAntena.material = matBaseMetal;
+            baseAntena.position = new BABYLON.Vector3(-12, 6.2, -12);
+
+            // Guardar posición de entrega para calcular distancias
+            const zonaEntregaPos = basePad.position.clone();
+
+            // ===== SISTEMA DE ENTRADA DE TECLADO =====
+            // ActionManager gestiona eventos de entrada
+            scene.actionManager = new BABYLON.ActionManager(scene);
+
+            // Detectar cuando se presiona una tecla
+            scene.actionManager.registerAction(
+                new BABYLON.ExecuteCodeAction(
+                    BABYLON.ActionManager.OnKeyDownTrigger,
+                    (evt) => {
+                        // Guardar tecla presionada en el mapa (en minúsculas)
+                        inputMap[evt.sourceEvent.key.toLowerCase()] = true;
+                    }
+                )
+            );
+
+            // Detectar cuando se suelta una tecla
+            scene.actionManager.registerAction(
+                new BABYLON.ExecuteCodeAction(
+                    BABYLON.ActionManager.OnKeyUpTrigger,
+                    (evt) => {
+                        // Marcar tecla como no presionada
+                        inputMap[evt.sourceEvent.key.toLowerCase()] = false;
+                    }
+                )
+            );
+            
+            // ----- CAMBIO DE CÁMARA CON TECLA V -----
+            scene.onKeyboardObservable.add((kbInfo) => {
+                if (kbInfo.type === BABYLON.KeyboardEventTypes.KEYDOWN && kbInfo.event.key.toLowerCase() === "v") {
+                    vistaFirstPerson = !vistaFirstPerson;  // Alternar vista
+                    if (vistaFirstPerson) {
+                        // Cambiar a vista primera persona (conductor)
+                        scene.activeCamera = cameraFirstPerson;
+                    } else {
+                        // Cambiar a vista tercera persona (desde atrás)
+                        scene.activeCamera = cameraThirdPerson;
+                    }
+                }
+            });
+
+            // ===== LÓGICA DE RECOGIDA Y ENTREGA DE ROCAS =====
+            let muestraEnMano = null;  // Referencia a la roca que el rover lleva
+            
+            // Función auxiliar para mostrar notificaciones temporales
+            function mostrarNotificacion(mensaje, tipo = 'recogida') {
+                const notification = document.getElementById('notification');
+                notification.textContent = mensaje;  // Cambiar texto
+                notification.style.display = 'block';  // Mostrar
+                notification.style.animation = 'notificationFade 2s ease-out';  // Animar
+                
+                // Ocultar después de 2 segundos
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                    notification.style.animation = '';
+                }, 2000);
+            }
+            
+            // ----- EVENTO DE TECLA ESPACIO (RECOGER/ENTREGAR/SOLTAR) -----
+            scene.onKeyboardObservable.add((kbInfo) => {
+                // Detectar si se presionó ESPACIO y el juego no ha terminado
+                if (
+                    kbInfo.type === BABYLON.KeyboardEventTypes.KEYDOWN &&
+                    kbInfo.event.key === " " &&
+                    !juegoTerminado
+                ) {
+                    if (rocasEnInventario.length < maxRocasInventario) {
+                        // ===== MODO RECOGER (si hay espacio en inventario) =====
+                        // Buscar la roca más cercana dentro del rango
+                        let rocaMasCercana = null;
+                        let distMin = 999;  // Distancia inicial muy grande
+                        
+                        // Iterar todas las rocas del mapa
+                        for (let roca of rocasArray) {
+                            if (!roca.recogida) {  // Solo rocas disponibles
+                                // Calcular distancia entre rover y roca
+                                const dist = BABYLON.Vector3.Distance(
+                                    roverRoot.position,
+                                    roca.position
+                                );
+                                // Si está dentro de 3 unidades y es la más cercana
+                                if (dist < 3 && dist < distMin) {
+                                    distMin = dist;
+                                    rocaMasCercana = roca;
+                                }
+                            }
+                        }
+                        
+                        if (rocaMasCercana) {
+                            // ----- EFECTO VISUAL DE RECOGIDA -----
+                            // Crear sistema de partículas naranjas
+                            const pickupEffect = new BABYLON.ParticleSystem("pickupEffect", 50, scene);
+                            pickupEffect.particleTexture = new BABYLON.Texture("https://www.babylonjs-playground.com/textures/flare.png", scene);
+                            pickupEffect.emitter = rocaMasCercana.position.clone();
+                            pickupEffect.minEmitBox = new BABYLON.Vector3(-0.5, 0, -0.5);
+                            pickupEffect.maxEmitBox = new BABYLON.Vector3(0.5, 0.5, 0.5);
+                            pickupEffect.color1 = new BABYLON.Color4(1, 0.8, 0, 1);  // Naranja
+                            pickupEffect.color2 = new BABYLON.Color4(1, 0.6, 0, 1);
+                            pickupEffect.colorDead = new BABYLON.Color4(0, 0, 0, 0);
+                            pickupEffect.minSize = 0.2;
+                            pickupEffect.maxSize = 0.5;
+                            pickupEffect.minLifeTime = 0.3;
+                            pickupEffect.maxLifeTime = 0.6;
+                            pickupEffect.emitRate = 100;
+                            pickupEffect.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+                            pickupEffect.gravity = new BABYLON.Vector3(0, -2, 0);
+                            pickupEffect.minEmitPower = 1;
+                            pickupEffect.maxEmitPower = 3;
+                            pickupEffect.updateSpeed = 0.01;
+                            pickupEffect.targetStopDuration = 0.3;  // Duración corta
+                            pickupEffect.disposeOnStop = true;  // Auto-eliminar
+                            pickupEffect.start();
+                            
+                            // Adjuntar roca al rover (se mueve con él)
+                            rocaMasCercana.parent = roverRoot;
+                            // Posicionar según cantidad de rocas (apiladas)
+                            const index = rocasEnInventario.length;
+                            rocaMasCercana.position = new BABYLON.Vector3(0, 1.4 + (index * 0.6), 0);
+                            rocaMasCercana.zonaRecogida.dispose();  // Eliminar zona naranja
+                            rocaMasCercana.recogida = true;  // Marcar como recogida temporalmente
+                            rocasEnInventario.push(rocaMasCercana);  // Agregar al inventario
+                            actualizarUI();  // Actualizar interfaz
+                            
+                            // Mostrar notificación con cantidad
+                            mostrarNotificacion(`Roca recogida (${rocasEnInventario.length}/${maxRocasInventario})`);
+                        } else {
+                            // No hay roca cerca
+                            mostrarNotificacion('Acércate más');
+                        }
+                    } else {
+                        // ===== MODO SOLTAR/ENTREGAR (inventario lleno) =====
+                        // Calcular distancia a la base de entrega
+                        const dist = BABYLON.Vector3.Distance(
+                            roverRoot.position,
+                            zonaEntregaPos
+                        );
+                        
+                        if (dist < 6) {  // Dentro del rango de entrega (ENTREGAR TODAS)
+                            // ----- EFECTO VISUAL DE ENTREGA -----
+                            // Crear sistema de partículas azules
+                            const deliverEffect = new BABYLON.ParticleSystem("deliverEffect", 100, scene);
+                            deliverEffect.particleTexture = new BABYLON.Texture("https://www.babylonjs-playground.com/textures/flare.png", scene);
+                            deliverEffect.emitter = zonaEntregaPos.clone();
+                            deliverEffect.minEmitBox = new BABYLON.Vector3(-1, 0, -1);
+                            deliverEffect.maxEmitBox = new BABYLON.Vector3(1, 1, 1);
+                            deliverEffect.color1 = new BABYLON.Color4(0, 0.5, 1, 1);  // Azul
+                            deliverEffect.color2 = new BABYLON.Color4(0.3, 0.7, 1, 1);
+                            deliverEffect.colorDead = new BABYLON.Color4(0, 0, 0, 0);
+                            deliverEffect.minSize = 0.3;
+                            deliverEffect.maxSize = 0.8;
+                            deliverEffect.minLifeTime = 0.5;
+                            deliverEffect.maxLifeTime = 1;
+                            deliverEffect.emitRate = 200;
+                            deliverEffect.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+                            deliverEffect.gravity = new BABYLON.Vector3(0, 2, 0);  // Gravedad hacia arriba
+                            deliverEffect.minEmitPower = 2;
+                            deliverEffect.maxEmitPower = 5;
+                            deliverEffect.updateSpeed = 0.01;
+                            deliverEffect.targetStopDuration = 0.5;  // Duración corta
+                            deliverEffect.disposeOnStop = true;  // Auto-eliminar
+                            deliverEffect.start();
+                            
+                            // Entregar TODAS las rocas del inventario
+                            const cantidadEntregada = rocasEnInventario.length;
+                            for (let roca of rocasEnInventario) {
+                                roca.dispose();  // Eliminar del mundo
+                            }
+                            rocasRecogidas += cantidadEntregada;  // Incrementar contador
+                            muestrasEntregadas += cantidadEntregada;
+                            rocasEnInventario = [];  // Vaciar inventario
+                            actualizarUI();  // Actualizar interfaz
+                            
+                            // Mostrar notificación con progreso
+                            mostrarNotificacion(`${cantidadEntregada} rocas entregadas (${rocasRecogidas}/${totalRocas})`);
+                            
+                            // Verificar condición de victoria
+                            if (rocasRecogidas >= totalRocas) {
+                                terminarJuego(true);  // Ganó el juego
+                            }
+                        } else {  // Fuera de la base (SOLTAR UNA ROCA)
+                            // ----- EFECTO VISUAL DE SOLTAR -----
+                            const dropEffect = new BABYLON.ParticleSystem("dropEffect", 30, scene);
+                            dropEffect.particleTexture = new BABYLON.Texture("https://www.babylonjs-playground.com/textures/flare.png", scene);
+                            dropEffect.emitter = roverRoot.position.clone();
+                            dropEffect.minEmitBox = new BABYLON.Vector3(-0.3, 0, -0.3);
+                            dropEffect.maxEmitBox = new BABYLON.Vector3(0.3, 0.3, 0.3);
+                            dropEffect.color1 = new BABYLON.Color4(1, 1, 0, 1);  // Amarillo
+                            dropEffect.color2 = new BABYLON.Color4(1, 0.8, 0, 1);
+                            dropEffect.colorDead = new BABYLON.Color4(0, 0, 0, 0);
+                            dropEffect.minSize = 0.2;
+                            dropEffect.maxSize = 0.4;
+                            dropEffect.minLifeTime = 0.2;
+                            dropEffect.maxLifeTime = 0.4;
+                            dropEffect.emitRate = 100;
+                            dropEffect.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+                            dropEffect.gravity = new BABYLON.Vector3(0, -2, 0);
+                            dropEffect.minEmitPower = 1;
+                            dropEffect.maxEmitPower = 2;
+                            dropEffect.updateSpeed = 0.01;
+                            dropEffect.targetStopDuration = 0.2;
+                            dropEffect.disposeOnStop = true;
+                            dropEffect.start();
+                            
+                            // Soltar la ÚLTIMA roca del inventario
+                            const rocaSoltada = rocasEnInventario.pop();  // Sacar última roca
+                            rocaSoltada.parent = null;  // Dejar de ser hijo del rover
+                            rocaSoltada.position = roverRoot.position.clone();  // Posición del rover
+                            rocaSoltada.position.y = 0.5;  // Ajustar altura al suelo
+                            rocaSoltada.recogida = false;  // Marcar como disponible nuevamente
+                            
+                            // Recrear zona de recogida naranja
+                            const zonaRecogidaSoltada = BABYLON.MeshBuilder.CreateGround(
+                                "zonaRecogidaSoltada",
+                                { width: 5, height: 5 },
+                                scene
+                            );
+                            zonaRecogidaSoltada.position = rocaSoltada.position.clone();
+                            zonaRecogidaSoltada.position.y = 0.01;
+                            const matZonaRecogidaSoltada = new BABYLON.StandardMaterial("matZonaRecogidaSoltada", scene);
+                            matZonaRecogidaSoltada.diffuseColor = new BABYLON.Color3(1, 0.5, 0);
+                            matZonaRecogidaSoltada.alpha = 0.3;
+                            zonaRecogidaSoltada.material = matZonaRecogidaSoltada;
+                            rocaSoltada.zonaRecogida = zonaRecogidaSoltada;
+                            
+                            // Actualizar estado
+                            actualizarUI();
+                            
+                            // Mostrar notificación
+                            mostrarNotificacion(`Roca soltada (${rocasEnInventario.length}/${maxRocasInventario})`);
+                        }
+                    }
+                }
+            });
+            
+            // ----- FUNCIÓN ACTUALIZAR INTERFAZ -----
+            // Actualiza el HTML con los valores actuales del juego
+            function actualizarUI() {
+                // Actualizar contador de rocas (X/Y)
+                document.getElementById('rocasRecogidas').textContent = `${rocasRecogidas}/${totalRocas}`;
+                
+                // Actualizar inventario (texto e icono) basado en cantidad
+                const iconoInventario = document.getElementById('iconoInventario');
+                const textoEnManos = document.getElementById('enManos');
+                const cantidadEnInventario = rocasEnInventario.length;
+                
+                // Mostrar X/3 rocas en inventario
+                textoEnManos.textContent = `${cantidadEnInventario}/${maxRocasInventario}`;
+                
+                // Cambiar icono y color según capacidad
+                if (cantidadEnInventario === 0) {
+                    iconoInventario.className = 'fas fa-box-open';
+                    iconoInventario.style.color = 'rgba(255, 255, 255, 0.5)';
+                } else if (cantidadEnInventario < maxRocasInventario) {
+                    iconoInventario.className = 'fas fa-box';
+                    iconoInventario.style.color = '#ffa500';  // Naranja (parcialmente lleno)
+                } else {
+                    iconoInventario.className = 'fas fa-box';
+                    iconoInventario.style.color = '#ff6b35';  // Rojo-naranja (completamente lleno)
+                }
+                
+                // Formatear tiempo restante (MM:SS)
+                const minutos = Math.floor(tiempoRestante / 60);
+                const segundos = tiempoRestante % 60;
+                const timerElement = document.getElementById('timer');
+                timerElement.textContent = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+                
+                // Cambiar color del timer según urgencia
+                timerElement.className = '';  // Limpiar clases
+                if (tiempoRestante <= 30) {
+                    timerElement.className = 'danger';  // Rojo (crítico)
+                } else if (tiempoRestante <= 60) {
+                    timerElement.className = 'warning';  // Amarillo (advertencia)
+                }
+                // Si > 60s, queda blanco por defecto
+            }
+            
+            // ----- FUNCIÓN TERMINAR JUEGO -----
+            // Muestra pantalla de victoria o derrota con estadísticas
+            function terminarJuego(victoria) {
+                juegoTerminado = true;  // Detener controles y timer
+                
+                // Obtener referencias a elementos del DOM
+                const gameOverDiv = document.getElementById('gameOver');
+                const resultTitle = document.getElementById('resultTitle');
+                const resultMessage = document.getElementById('resultMessage');
+                const finalStats = document.getElementById('finalStats');
+                
+                // Configurar mensaje según resultado
+                if (victoria) {
+                    resultTitle.innerHTML = '<i class="fas fa-trophy"></i> ¡MISIÓN COMPLETA!';
+                    resultMessage.textContent = '¡Has recolectado todas las muestras!';
+                    resultTitle.style.color = '#00ff88';  // Verde éxito
+                } else {
+                    resultTitle.innerHTML = '<i class="fas fa-hourglass-end"></i> ¡TIEMPO AGOTADO!';
+                    resultMessage.textContent = 'La misión ha fallado';
+                    resultTitle.style.color = '#ff3333';  // Rojo fracaso
+                }
+                
+                // Calcular tiempo usado (300s - tiempo restante)
+                const tiempoUsado = 300 - tiempoRestante;
+                const minutos = Math.floor(tiempoUsado / 60);
+                const segundos = tiempoUsado % 60;
+                
+                // Mostrar estadísticas finales
+                finalStats.innerHTML = `
+                    <strong>Rocas recolectadas:</strong> ${rocasRecogidas} / ${totalRocas}<br/>
+                    <strong>Tiempo usado:</strong> ${minutos}:${segundos.toString().padStart(2, '0')}
+                `;
+                
+                // Mostrar pantalla de game over
+                gameOverDiv.style.display = 'block';
+            }
+
+            // ----- SISTEMA DE MOVIMIENTO DEL ROVER -----
+            // Velocidades de traslación y rotación
+            const velocidad = 0.3;  // Unidades por frame
+            const velocidadRotacion = 0.04;  // Radianes por frame
+
+            // Ejecutar cada frame antes del render
+            scene.onBeforeRenderObservable.add(() => {
+                if (juegoTerminado || juegoPausado || !juegoIniciado) return;  // No mover si está pausado, terminado o no ha iniciado
+                
+                let moverAdelante = 0;  // -1 = atrás, 0 = quieto, 1 = adelante
+
+                // Detectar flechas ARRIBA/ABAJO para avanzar/retroceder
+                if (inputMap["arrowup"]) {
+                    moverAdelante = 1;  // Avanzar
+                }
+                if (inputMap["arrowdown"]) {
+                    moverAdelante = -1;  // Retroceder
+                }
+                
+                // Detectar flechas IZQUIERDA/DERECHA para girar
+                if (inputMap["arrowleft"]) {
+                    roverRoot.rotation.y -= velocidadRotacion;  // Girar izquierda
+                }
+                if (inputMap["arrowright"]) {
+                    roverRoot.rotation.y += velocidadRotacion;  // Girar derecha
+                }
+
+                // ----- APLICAR MOVIMIENTO BASADO EN ROTACIÓN -----
+                // Calcular vector de dirección frontal del rover usando su rotación Y
+                if (moverAdelante !== 0) {
+                    // El rover mira hacia +Z inicialmente
+                    // Usar trigonometría para calcular el vector forward basado en rotation.y
+                    // sin(y) da el componente X, cos(y) da el componente Z
+                    const forward = new BABYLON.Vector3(
+                        Math.sin(roverRoot.rotation.y),  // Componente X
+                        0,  // Componente Y (no cambia altura)
+                        Math.cos(roverRoot.rotation.y)  // Componente Z
+                    );
+                    
+                    // Aplicar el movimiento: position += forward * direccion * velocidad
+                    roverRoot.position.addInPlace(forward.scale(moverAdelante * velocidad));
+                }
+            });
+            
+            // Inicializar UI al cargar
+            actualizarUI();
+
+            return scene;
+        };
+
+        // ----- CREAR Y EJECUTAR ESCENA -----
+        scene = createScene();  // Llamar función principal y asignar a variable global
+
+        // Bucle de renderizado (ejecuta cada frame)
+        engine.runRenderLoop(() => {
+            scene.render();  // Renderizar frame actual
+        });
+
+        // Redimensionar canvas cuando cambia el tamaño de la ventana
+        window.addEventListener("resize", () => {
+            engine.resize();  // Ajustar resolución del motor
+        });
+        
+        // ----- TEMPORIZADOR DEL JUEGO -----
+        // Ejecuta cada 1000ms (1 segundo) para descontar tiempo
+        function iniciarTemporizador() {
+            timerInterval = setInterval(() => {
+                if (!juegoTerminado && !juegoPausado && juegoIniciado && tiempoRestante > 0) {
+                    tiempoRestante--;  // Descontar 1 segundo
+                    actualizarUI();  // Actualizar interfaz
+                    
+                    // Verificar si se acabó el tiempo
+                    if (tiempoRestante <= 0) {
+                        terminarJuego(false);  // Derrota por tiempo
+                    }
+                }
+            }, 1000);  // 1000ms = 1 segundo
+        }
+        
+        // ----- FUNCIONES DE CONTROL DEL JUEGO -----
+        
+        // Iniciar el juego desde el menú principal
+        function iniciarJuego() {
+            document.getElementById('menuInicio').classList.add('hidden');
+            juegoIniciado = true;
+            iniciarTemporizador();
+        }
+        
+        // Pausar el juego
+        function pausarJuego() {
+            if (!juegoTerminado && juegoIniciado) {
+                juegoPausado = true;
+                document.getElementById('menuPausa').classList.add('active');
+            }
+        }
+        
+        // Continuar el juego desde la pausa
+        function continuarJuego() {
+            juegoPausado = false;
+            document.getElementById('menuPausa').classList.remove('active');
+        }
+        
+        // Reiniciar el juego completamente
+        function reiniciarJuego() {
+            location.reload();
+        }
+        
+        // Salir al menú principal
+        function salirAlMenu() {
+            location.reload();
+        }
+        
+        /*
+        ===== RESUMEN DE FUNCIONALIDAD DEL JUEGO =====
+        
+        Este es un juego 3D de exploración marciana hecho con Babylon.js donde:
+        
+        1. OBJETIVO: 
+           Recolectar 20 rocas marcianas y entregarlas en la base central en 5 minutos
+        
+        2. CONTROLES:
+           - Flechas ↑↓: Avanzar/Retroceder el rover
+           - Flechas ←→: Girar izquierda/derecha
+           - ESPACIO: Recoger roca (cerca de zona naranja) o Entregar (en base azul)
+           - V: Cambiar entre vista tercera persona y primera persona (driver view)
+        
+        3. COMPONENTES PRINCIPALES:
+           - Skybox espacial con 2000 partículas de estrellas
+           - Terreno marciano de 200x200 unidades con textura rojiza
+           - Rover realista con 6 ruedas, paneles solares y parabrisas
+           - 20 rocas distribuidas aleatoriamente con zonas de recogida (naranja)
+           - Base de entrega central con torre, antena, domo y zona azul
+        
+        4. SISTEMAS DEL JUEGO:
+           - Sistema de movimiento: Rotación + vector forward para movimiento realista
+           - Sistema de cámaras: FollowCamera (tercera persona) y FreeCamera (primera persona)
+           - Sistema de input: ActionManager con inputMap para detección de teclas
+           - Sistema de partículas: Estrellas, efectos de recogida (naranja) y entrega (azul)
+           - Sistema de UI: Actualización dinámica de timer, contador y inventario
+           - Sistema de notificaciones: Mensajes sutiles con fade-in/fade-out
+        
+        5. MECÁNICAS DE JUEGO:
+           - Recogida: Buscar roca más cercana dentro de 3 unidades
+           - Entrega: Estar dentro de 6 unidades de la base
+           - Timer: 5 minutos (300s) con advertencias de color (amarillo/rojo)
+           - Victoria: Recoger las 20 rocas antes de que se acabe el tiempo
+           - Derrota: Se acaba el tiempo antes de completar
+        
+        6. TECNOLOGÍAS USADAS:
+           - Babylon.js 5.0 (motor de renderizado 3D WebGL)
+           - HTML5 Canvas (superficie de renderizado)
+           - JavaScript vanilla (lógica del juego)
+           - CSS3 (animaciones, gradientes, backdrop-filter)
+        
+        7. ARQUITECTURA DEL CÓDIGO:
+           - Patrón de jerarquía de objetos con TransformNode (rover como contenedor padre)
+           - Sistema de eventos con ActionManager para input de teclado
+           - Bucle de juego con onBeforeRenderObservable para actualización por frame
+           - Gestión de estado con variables globales (juegoTerminado, tieneMuestra, etc.)
+           - Sistema de materiales con StandardMaterial y texturas para realismo visual
+        */
+    </script>
+</body>
+</html>
